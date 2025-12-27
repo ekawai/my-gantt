@@ -1,0 +1,133 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import gantt from 'dhtmlx-gantt';
+import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+
+import jaLocale from '@/locales/ja'; 
+
+export default function OpGantt() {
+  const ganttRef = useRef<HTMLDivElement>(null);
+
+  const [density, setDensity] = useState<'compact' | 'normal' | 'large'>(
+    'normal'
+  );
+
+  // ---- Apply density ----
+  const applyDensity = () => {
+    if (density === 'compact') {
+      gantt.config.row_height = 32;
+      gantt.config.bar_height = 18;
+    }
+    if (density === 'normal') {
+      gantt.config.row_height = 42;
+      gantt.config.bar_height = 24;
+    }
+    if (density === 'large') {
+      gantt.config.row_height = 56;
+      gantt.config.bar_height = 32;
+    }
+    gantt.setSizes(); // 👈 recalc layout
+  };
+
+  useEffect(() => {
+    gantt.config.xml_date = '%Y-%m-%d';
+    gantt.config.fit_tasks = true;
+    gantt.locale = jaLocale;
+
+    gantt.config.locale = 'ja';
+    gantt.config.xml_date = '%Y-%m-%d';
+    gantt.config.row_height = 42;
+    gantt.config.bar_height = 24;
+
+    // ✅ ENABLE ZOOM EXTENSION
+    gantt.ext.zoom.init({
+      levels: [
+        {
+          name: 'day',
+          scale_height: 27,
+          min_column_width: 80,
+          scales: [{ unit: 'day', step: 1, format: '%d %M' }],
+        },
+        {
+          name: 'week',
+          scale_height: 50,
+          min_column_width: 50,
+          scales: [
+            {
+              unit: 'week',
+              step: 1,
+              format: (date: Date) => {
+                const end = gantt.date.add(date, 6, 'day');
+                return (
+                  gantt.date.date_to_str('%d %M')(date) +
+                  ' - ' +
+                  gantt.date.date_to_str('%d %M')(end)
+                );
+              },
+            },
+            { unit: 'day', step: 1, format: '%j %D' },
+          ],
+        },
+        {
+          name: 'month',
+          scale_height: 50,
+          min_column_width: 50,
+          scales: [{ unit: 'month', step: 1, format: '%F %Y' }],
+        },
+      ],
+    });
+
+    gantt.init(ganttRef.current!);
+
+    gantt.parse({
+      data: [
+        { id: 1, text: 'Task 1', start_date: '2025-12-01', duration: 5 },
+        { id: 2, text: 'Task 2', start_date: '2025-12-06', duration: 4 },
+        { id: 3, text: 'Task 3', start_date: '2025-12-11', duration: 6 },
+        { id: 4, text: 'Task 4', start_date: '2025-12-18', duration: 3 },
+      ],
+    });
+
+    applyDensity();
+
+    return () => {
+      gantt.clearAll();
+    };
+  }, []);
+
+  // Re-apply when density changes
+  useEffect(() => {
+    applyDensity();
+  }, [density]);
+
+  return (
+    <div style={{ padding: 16 }}>
+      <h1 style={{ fontSize: 20, marginBottom: 12 }}>
+        Gantt (dhtmlx)
+      </h1>
+
+      {/* ---- Controls ---- */}
+      <div style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
+        {/* Zoom */}
+        <button onClick={() => gantt.ext.zoom.zoomIn()}>Zoom +</button>
+        <button onClick={() => gantt.ext.zoom.zoomOut()}>Zoom -</button>
+
+        {/* Density */}
+        <button onClick={() => setDensity('compact')}>Compact</button>
+        <button onClick={() => setDensity('normal')}>Normal</button>
+        <button onClick={() => setDensity('large')}>Large</button>
+      </div>
+
+      {/* ---- Gantt viewport ---- */}
+      <div
+        ref={ganttRef}
+        style={{
+          width: '100%',
+          height: 'calc(100vh - 180px)',
+          border: '1px solid #ddd',
+        }}
+      />
+    </div>
+  );
+}

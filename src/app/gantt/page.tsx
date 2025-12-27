@@ -1,5 +1,5 @@
-import FrappeGantt from "@/components/FrappeGantt";
+import OpGantt from "@/components/OpGantt";
 
 export default function Page() {
-  return <FrappeGantt />;
+  return <OpGantt />;
 }
